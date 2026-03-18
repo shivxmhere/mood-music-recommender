@@ -743,12 +743,6 @@
   function applyMoodTheme(emotion) {
     const color = SentimentEngine.MOOD_COLORS[emotion] || '#ff6b35';
     document.documentElement.style.setProperty('--mood-color', color);
-
-    // Subtle body tint
-    const rgb = hexToRgb(color);
-    if (rgb) {
-      document.body.style.backgroundColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.04)`;
-    }
   }
 
   // ══════════════════════════════════════════

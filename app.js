@@ -247,7 +247,7 @@
   // ══════════════════════════════════════════
   // 2. HANDLE MOOD SUBMIT
   // ══════════════════════════════════════════
-  async function handleMoodSubmit() {
+  async function handleMoodSubmit(autoPlay = false) {
     const text = dom.moodInput.value.trim();
     if (text.length < 10) {
       showToast('Please describe your mood in at least 10 characters ✍️', 'error');
@@ -320,6 +320,14 @@
       if (window.lucide) lucide.createIcons();
 
       showToast(`🎵 Found ${tracks.length} tracks for your "${emotion.primary}" mood!`, 'success');
+
+      // Auto-play the first track if triggered from "End of Playlist"
+      if (autoPlay === true) {
+        setTimeout(() => {
+          const firstBtn = document.querySelector('.track-card .btn-play');
+          if (firstBtn) firstBtn.click();
+        }, 500);
+      }
 
     } catch (err) {
       console.error('Analysis error:', err);
@@ -640,8 +648,8 @@
         if (nextBtn) nextBtn.click();
       }, 300);
     } else {
-      stopPlayback(true);
-      showToast('Playlist finished! 🎶', 'info');
+      showToast('Loading more songs for your mood... 🎶', 'info');
+      handleMoodSubmit(true);
     }
   }
 

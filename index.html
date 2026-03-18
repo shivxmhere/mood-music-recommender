@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MoodTunes — Mood-Based Music Recommender | Day 6/35</title>
+  <meta name="description" content="Describe your mood in plain English and get a perfect playlist instantly. Built with custom sentiment analysis and iTunes API.">
+
+  <!-- Fonts -->
+  <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&display=swap">
+  <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+  <link rel="stylesheet" href="style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+</head>
+<body>
+  <!-- ====== NAVBAR ====== -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-content">
+      <a href="#" class="nav-brand">
+        <span class="brand-icon">🎵</span>
+        <span class="brand-text"><span class="brand-mood">Mood</span>Tunes</span>
+      </a>
+      <div class="nav-pill">
+        <span>Day 6/35 · Mood Music Recommender</span>
+      </div>
+      <div class="nav-actions">
+        <button class="btn-nav" id="btnMyPlaylists" aria-label="My playlists">
+          <i data-lucide="headphones"></i>
+          <span>My Playlists</span>
+        </button>
+        <a href="https://github.com/shivxmhere/mood-music-recommender" target="_blank" class="btn-nav-icon" aria-label="GitHub repository">
+          <i data-lucide="github"></i>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ====== HERO SECTION ====== -->
+  <section class="hero" id="hero">
+    <div class="floating-notes" id="floatingNotes"></div>
+    <div class="hero-content">
+      <p class="hero-eyebrow">♪ SENTIMENT ANALYSIS × MUSIC DISCOVERY ♫</p>
+      <h1 class="hero-title">How Are You Feeling<br>Right Now?</h1>
+      <p class="hero-subtitle">Describe your mood in plain English.<br>Our sentiment engine reads your emotions and builds the perfect playlist — instantly.</p>
+
+      <div class="mood-input-wrap">
+        <textarea
+          id="moodInput"
+          class="mood-input"
+          maxlength="300"
+          placeholder="Tell me how you're feeling...&#10;Try: 'I'm stressed before my exams and need something to calm me down' or 'feeling super energetic and happy today!'"
+          rows="4"
+        ></textarea>
+        <span class="char-count" id="charCount">0/300 characters</span>
+      </div>
+
+      <div class="quick-moods" id="quickMoods">
+        <button class="mood-chip" data-mood="happy">😊 Happy</button>
+        <button class="mood-chip" data-mood="sad">😢 Sad</button>
+        <button class="mood-chip" data-mood="stressed">😤 Stressed</button>
+        <button class="mood-chip" data-mood="sleepy">😴 Sleepy</button>
+        <button class="mood-chip" data-mood="energetic">💪 Energetic</button>
+        <button class="mood-chip" data-mood="romantic">😍 Romantic</button>
+        <button class="mood-chip" data-mood="focused">🎯 Focused</button>
+        <button class="mood-chip" data-mood="angry">😤 Angry</button>
+      </div>
+
+      <button class="btn-analyse" id="btnAnalyse">
+        <span class="btn-text">Analyse My Mood →</span>
+        <span class="btn-loading" style="display:none">
+          <span class="spinner">🎵</span> Analysing...
+        </span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ====== MOOD RESULT BANNER ====== -->
+  <section class="mood-banner" id="moodBanner" style="display:none">
+    <div class="banner-content">
+      <div class="banner-mood">
+        <span class="banner-emoji" id="bannerEmoji">😊</span>
+        <span class="banner-label" id="bannerLabel">Happy</span>
+        <span class="banner-confidence" id="bannerConfidence">87% confident</span>
+      </div>
+      <div class="banner-params" id="bannerParams">
+        <!-- Filled by JS -->
+      </div>
+      <div class="banner-breakdown" id="bannerBreakdown">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== EMOTION WHEEL ====== -->
+  <section class="emotion-wheel-section" id="emotionWheelSection" style="display:none">
+    <div class="emotion-wheel-container">
+      <div class="emotion-wheel" id="emotionWheel"></div>
+      <div class="emotion-legend" id="emotionLegend"></div>
+    </div>
+  </section>
+
+  <!-- ====== MAIN CONTENT ====== -->
+  <section class="main-content" id="mainContent" style="display:none">
+    <div class="content-grid">
+      <!-- LEFT — PLAYLIST -->
+      <div class="playlist-section">
+        <div class="playlist-header">
+          <div>
+            <h2 class="section-title"><i data-lucide="headphones"></i> Your Mood Playlist</h2>
+            <p class="section-subtitle" id="playlistSubtitle">10 tracks matched to your vibe</p>
+          </div>
+          <div class="playlist-actions">
+            <button class="btn-action" id="btnSavePlaylist">
+              <i data-lucide="save"></i> Save Playlist
+            </button>
+            <button class="btn-action" id="btnShuffle">
+              <i data-lucide="shuffle"></i> Shuffle
+            </button>
+          </div>
+        </div>
+        <div class="playlist-tracks" id="playlistTracks">
+          <!-- Track cards rendered by JS -->
+        </div>
+      </div>
+
+      <!-- RIGHT — SIDEBAR -->
+      <div class="sidebar">
+        <!-- Mood Analytics -->
+        <div class="sidebar-card" id="moodAnalyticsCard">
+          <h3 class="card-title"><i data-lucide="brain"></i> Your Emotional DNA</h3>
+          <div class="analytics-bars" id="analyticsBars"></div>
+        </div>
+
+        <!-- Audio Features -->
+        <div class="sidebar-card" id="audioFeaturesCard">
+          <h3 class="card-title"><i data-lucide="activity"></i> Music DNA</h3>
+          <div class="progress-rings" id="progressRings"></div>
+        </div>
+
+        <!-- Mood History -->
+        <div class="sidebar-card" id="moodHistoryCard">
+          <h3 class="card-title"><i data-lucide="clock"></i> Past Vibes</h3>
+          <div class="mood-history" id="moodHistory">
+            <p class="empty-state">No mood history yet. Analyse your first mood!</p>
+          </div>
+        </div>
+
+        <!-- Genre Breakdown -->
+        <div class="sidebar-card" id="genreBreakdownCard">
+          <h3 class="card-title"><i data-lucide="pie-chart"></i> Genre Mix</h3>
+          <div class="genre-bars" id="genreBars"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== HOW IT WORKS ====== -->
+  <section class="how-it-works" id="howItWorks">
+    <h2 class="section-title center">The Science Behind Your Playlist</h2>
+    <div class="steps-flow">
+      <div class="step-card">
+        <div class="step-icon">📝</div>
+        <h3 class="step-label">You Describe Your Mood</h3>
+        <p class="step-desc">Write naturally. No special format needed. Our engine understands human language.</p>
+      </div>
+      <div class="step-arrow"><i data-lucide="arrow-right"></i></div>
+      <div class="step-card">
+        <div class="step-icon">🧠</div>
+        <h3 class="step-label">Sentiment Analysis</h3>
+        <p class="step-desc">500+ word lexicon scores your text for valence, arousal, and emotional intensity.</p>
+      </div>
+      <div class="step-arrow"><i data-lucide="arrow-right"></i></div>
+      <div class="step-card">
+        <div class="step-icon">🎯</div>
+        <h3 class="step-label">Music Parameter Mapping</h3>
+        <p class="step-desc">Mood maps to audio features: valence, energy, tempo, acousticness.</p>
+      </div>
+      <div class="step-arrow"><i data-lucide="arrow-right"></i></div>
+      <div class="step-card">
+        <div class="step-icon">🎵</div>
+        <h3 class="step-label">Perfect Playlist Built</h3>
+        <p class="step-desc">iTunes API returns 10 tracks matching your emotional fingerprint exactly.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== SAMPLE MOODS SHOWCASE ====== -->
+  <section class="showcase" id="showcase">
+    <h2 class="section-title center">See It In Action</h2>
+    <div class="showcase-grid">
+      <div class="showcase-card" data-theme="stress">
+        <div class="showcase-header">
+          <span class="showcase-emoji">😤</span>
+          <h3>Pre-exam Stress</h3>
+        </div>
+        <p class="showcase-input">"Stressed before exams, need to calm my mind"</p>
+        <div class="showcase-result">
+          <span class="showcase-mood">→ Calm / Focused</span>
+          <div class="showcase-tracks">
+            <span class="genre-pill pill-blue">Lo-fi</span>
+            <span class="genre-pill pill-teal">Ambient</span>
+            <span class="genre-pill pill-green">Study Beats</span>
+          </div>
+        </div>
+      </div>
+      <div class="showcase-card" data-theme="workout">
+        <div class="showcase-header">
+          <span class="showcase-emoji">💪</span>
+          <h3>Morning Workout</h3>
+        </div>
+        <p class="showcase-input">"Feeling pumped and ready to crush my workout today"</p>
+        <div class="showcase-result">
+          <span class="showcase-mood">→ Energetic / Happy</span>
+          <div class="showcase-tracks">
+            <span class="genre-pill pill-orange">EDM</span>
+            <span class="genre-pill pill-red">Hip-Hop</span>
+            <span class="genre-pill pill-yellow">Pop</span>
+          </div>
+        </div>
+      </div>
+      <div class="showcase-card" data-theme="heartbreak">
+        <div class="showcase-header">
+          <span class="showcase-emoji">😢</span>
+          <h3>Heartbreak</h3>
+        </div>
+        <p class="showcase-input">"Feeling sad and lonely, missing someone special"</p>
+        <div class="showcase-result">
+          <span class="showcase-mood">→ Melancholy / Sad</span>
+          <div class="showcase-tracks">
+            <span class="genre-pill pill-purple">Indie</span>
+            <span class="genre-pill pill-indigo">Acoustic</span>
+            <span class="genre-pill pill-pink">Ballads</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ====== SAVED PLAYLISTS MODAL ====== -->
+  <div class="modal-overlay" id="playlistModal" style="display:none">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2 class="modal-title">🎧 My Saved Playlists</h2>
+        <button class="modal-close" id="modalClose"><i data-lucide="x"></i></button>
+      </div>
+      <div class="modal-body" id="modalBody">
+        <p class="empty-state">No saved playlists yet.<br>Analyse your mood and save your first playlist!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== NOW PLAYING BAR ====== -->
+  <div class="now-playing" id="nowPlaying" style="display:none">
+    <div class="np-content">
+      <div class="np-info">
+        <img class="np-artwork" id="npArtwork" src="" alt="Album art">
+        <div class="np-text">
+          <span class="np-title" id="npTitle">Song Title</span>
+          <span class="np-artist" id="npArtist">Artist Name</span>
+        </div>
+      </div>
+      <div class="np-controls-wrap">
+        <div class="np-controls">
+          <!-- Playback controls can go here -->
+        </div>
+        <div class="np-progress-bar">
+          <span class="np-time" id="npTimeElapsed">0:00</span>
+          <div class="np-progress-wrap" id="npProgressWrap">
+            <div class="np-progress" id="npProgress"></div>
+          </div>
+          <span class="np-time" id="npTimeTotal">0:30</span>
+        </div>
+      </div>
+      <div class="np-right">
+        <input type="range" class="np-volume" id="npVolume" min="0" max="100" value="80">
+        <button class="np-close" id="npClose"><i data-lucide="x"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== FOOTER ====== -->
+  <footer class="footer">
+    <p>♪ Built by <strong>Shivam Singh</strong> · IIT Patna · Day 6/35 · <a href="https://github.com/shivxmhere" target="_blank">#35DaysOfProjects</a> ♫</p>
+  </footer>
+
+  <!-- ====== TOAST ====== -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Scripts (order matters) -->
+  <script src="sentiment.js"></script>
+  <script src="music.js"></script>
+  <script src="visualiser.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

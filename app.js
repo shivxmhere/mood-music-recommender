@@ -465,7 +465,7 @@
       <div class="track-info">
         <span class="track-title">${escapeHtml(track.title)}</span>
         <span class="track-artist">${escapeHtml(track.artist)}</span>
-        <div class="track-meta" style="display:flex; gap:6px; align-items:center; margin-top:4px;">
+        <div class="track-meta">
           <span style="font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(255,255,255,0.1);color:${badgeColor}">${badgeText}</span>
           <span class="genre-tag" style="font-size:0.65rem;font-weight:600;padding:2px 8px;border-radius:20px;background:rgba(255,255,255,0.1);color:#fff">${track.genre}</span>
           <span class="track-duration">${duration}</span>

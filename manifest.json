@@ -1,0 +1,16 @@
+{
+  "name": "MoodTunes - Music Recommender",
+  "short_name": "MoodTunes",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#1DB954",
+  "description": "Describe your mood, get the perfect playlist.",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

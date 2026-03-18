@@ -769,7 +769,11 @@ img {
 }
 
 .track-meta {
-  display: none; /* Hide for cleaner Spotify vibe unless needed */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 4px;
 }
 
 /* Duration - moved to right side before controls for Spotify vibe */
@@ -1615,10 +1619,10 @@ img {
 
 @media (max-width: 600px) {
   .hero-title {
-    font-size: 2.2rem;
+    font-size: 2rem;
   }
   .hero {
-    padding: 70px 16px 50px;
+    padding: 30px 16px 20px;
   }
   .nav-pill {
     display: none;
@@ -1640,6 +1644,36 @@ img {
   }
   .track-controls {
     opacity: 1;
+  }
+
+  /* Compact everything for 1-page mobile feel */
+  .mood-banner {
+    padding: 16px;
+  }
+  .banner-emoji {
+    font-size: 2rem;
+  }
+  .banner-label {
+    font-size: 1.2rem;
+  }
+  .emotion-wheel-section {
+    padding: 16px;
+  }
+  .emotion-wheel {
+    width: 220px;
+    height: 220px;
+  }
+  .main-content {
+    padding: 16px 16px 140px;
+  }
+  .content-grid {
+    gap: 16px;
+  }
+  .section-title {
+    font-size: 1.3rem;
+  }
+  .track-card {
+    padding: 8px 10px;
   }
 }
 

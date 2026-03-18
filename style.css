@@ -1664,13 +1664,18 @@ img {
     height: 220px;
   }
   .main-content {
-    padding: 16px 16px 140px;
+    padding: 16px 16px 120px;
   }
   .content-grid {
-    gap: 16px;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  /* Hide sidebar on mobile to make it perfectly 1 page */
+  .sidebar {
+    display: none;
   }
   .section-title {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
   }
   .track-card {
     padding: 8px 10px;

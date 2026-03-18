@@ -36,18 +36,66 @@ const MusicAPI = (() => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
 
-  // ── Fetch tracks from iTunes ──
+  // ── Fetch tracks from iTunes (Fallback: 30s) ──
   async function fetchTracks(searchTerm, limit = 12) {
     const url = `${BASE_URL}?term=${encodeURIComponent(searchTerm)}&media=music&entity=song&limit=${limit}&country=IN&explicit=No`;
 
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`iTunes API error: ${response.status}`);
+      throw new Error(`iTunes Search failed: ${response.status}`);
     }
-
     const data = await response.json();
-    return (data.results || []).map(parseTrack);
+    return data.results.map(track => ({
+      id: track.trackId,
+      title: track.trackName,
+      artist: track.artistName,
+      genre: track.primaryGenreName,
+      artwork: track.artworkUrl100,
+      duration: track.trackTimeMillis,
+      preview: track.previewUrl,
+      itunesUrl: track.trackViewUrl,
+      source: 'itunes'
+    }));
   }
+
+  // ── Fetch tracks from JioSaavn (Primary: Full Free Songs) ──
+  async function fetchSaavnTracks(searchTerm, limit = 10) {
+    // We use the most reputable open source JioSaavn API
+    const url = `https://saavn.dev/api/search/songs?query=${encodeURIComponent(searchTerm)}&limit=${limit}`;
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Saavn Search failed: ${response.status}`);
+    }
+    const json = await response.json();
+    const results = json?.data?.results || [];
+
+    return results.map(track => {
+      // Find highest quality download URL
+      const streamUrl = track.downloadUrl && track.downloadUrl.length > 0
+        ? track.downloadUrl[track.downloadUrl.length - 1].url
+        : track.url;
+        
+      const artwork = track.image && track.image.length > 0
+        ? track.image[track.image.length - 1].url
+        : '';
+        
+      // Ensure we have a valid streamable media link
+      if (!streamUrl) return null;
+
+      return {
+        id: track.id,
+        title: track.name,
+        // Saavn returns arrays or string for primaryArtists. Handle both:
+        artist: typeof track.primaryArtists === 'string' ? track.primaryArtists : (track.primaryArtists?.[0]?.name || 'Unknown Artist'),
+        genre: track.language ? track.language.charAt(0).toUpperCase() + track.language.slice(1) : 'Bollywood',
+        artwork: artwork,
+        duration: track.duration ? track.duration * 1000 : 180000,
+        preview: streamUrl,
+        itunesUrl: track.url || '#',
+        source: 'saavn'
+      };
+    }).filter(t => t !== null);
+  }  
 
   // ── Get a complete playlist by trying multiple search terms ──
   async function getPlaylist(musicParams, language, targetCount = 10) {
@@ -74,34 +122,53 @@ const MusicAPI = (() => {
       [terms[i], terms[j]] = [terms[j], terms[i]];
     }
 
+    // Attempt to use Saavn API for FULL length songs first
+    let fetchFn = fetchSaavnTracks;
+    let usingFallback = false;
+
+    // We'll iterate terms, keeping only those we haven't seen.
     for (const term of terms) {
       if (allTracks.length >= targetCount) break;
-
       try {
-        const tracks = await fetchTracks(term, 15);
-
+        const tracks = await fetchFn(term, 8);
         for (const track of tracks) {
           if (allTracks.length >= targetCount) break;
-          if (seenIds.has(track.id)) continue;
-          if (!track.title || track.title === 'Unknown Title') continue;
-
-          seenIds.add(track.id);
+          // De-duplicate by title + artist to be safe across APIs
+          const uniqueKey = track.title + track.artist;
+          if (seenIds.has(uniqueKey)) continue;
+          seenIds.add(uniqueKey);
           allTracks.push(track);
         }
-      } catch (err) {
-        console.warn(`Failed to fetch for "${term}":`, err.message);
-        continue;
+      } catch (e) {
+        console.warn(`Saavn error for "${term}":`, e.message);
+        // If Saavn fails (blocked/down), gracefully switch to iTunes API permanently for this request
+        usingFallback = true;
+        fetchFn = fetchTracks;
+        try {
+          // Retry immediately with iTunes
+          const fallbackTracks = await fetchFn(term, 8);
+          for (const track of fallbackTracks) {
+            if (allTracks.length >= targetCount) break;
+            const uniqueKey = track.title + track.artist;
+            if (seenIds.has(uniqueKey)) continue;
+            seenIds.add(uniqueKey);
+            allTracks.push(track);
+          }
+        } catch (err) {
+          console.warn(`iTunes fallback also failed for "${term}":`, err.message);
+        }
       }
     }
 
-    // If we still don't have enough, try a generic search
+    // If still short, generic fallback fetch
     if (allTracks.length < targetCount) {
       try {
-        const fallback = await fetchTracks('popular music hits', 15);
+        const fallback = await fetchFn('popular hits 2024', 15);
         for (const track of fallback) {
           if (allTracks.length >= targetCount) break;
-          if (seenIds.has(track.id)) continue;
-          seenIds.add(track.id);
+          const uniqueKey = track.title + track.artist;
+          if (seenIds.has(uniqueKey)) continue;
+          seenIds.add(uniqueKey);
           allTracks.push(track);
         }
       } catch (e) {

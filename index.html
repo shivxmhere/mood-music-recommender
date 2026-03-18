@@ -44,6 +44,63 @@
       border-color: #1DB954;
       font-weight: 700;
     }
+    
+    /* Now Playing Controls & Mobile Adjustments */
+    .np-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      transition: all 0.2s;
+    }
+    .np-btn:hover {
+      color: #fff;
+      transform: scale(1.1);
+    }
+    .np-btn-main {
+      background: #fff;
+      color: #000;
+      width: 40px;
+      height: 40px;
+    }
+    .np-btn-main:hover {
+      background: var(--primary);
+      color: #000;
+      transform: scale(1.05);
+    }
+    
+    @media (max-width: 600px) {
+      .now-playing {
+        padding: 8px 16px;
+      }
+      .np-content {
+        flex-direction: row;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      .np-info {
+        flex: 1 1 auto;
+        min-width: 50%;
+      }
+      .np-controls-wrap {
+        flex: 1 1 100%;
+        order: 3;
+        margin-top: 4px;
+      }
+      .np-controls {
+        gap: 24px;
+      }
+      .np-btn {
+        width: 44px;
+        height: 44px;
+      }
+      .np-btn svg { width: 24px; height: 24px; }
+    }
   </style>
 </head>
 <body>
@@ -301,7 +358,9 @@
       </div>
       <div class="np-controls-wrap">
         <div class="np-controls">
-          <!-- Playback controls can go here -->
+          <button class="np-btn" id="npBtnPrev" title="Previous"><i data-lucide="skip-back"></i></button>
+          <button class="np-btn np-btn-main" id="npBtnPlay" title="Play/Pause"><i data-lucide="play"></i></button>
+          <button class="np-btn" id="npBtnNext" title="Next"><i data-lucide="skip-forward"></i></button>
         </div>
         <div class="np-progress-bar">
           <span class="np-time" id="npTimeElapsed">0:00</span>

@@ -70,6 +70,9 @@
     npTimeTotal: $('#npTimeTotal'),
     npVolume: $('#npVolume'),
     npClose: $('#npClose'),
+    npBtnPrev: $('#npBtnPrev'),
+    npBtnPlay: $('#npBtnPlay'),
+    npBtnNext: $('#npBtnNext'),
     // Modal
     playlistModal: $('#playlistModal'),
     modalBody: $('#modalBody'),
@@ -111,6 +114,38 @@
     setTimeout(() => {
       showToast('🎵 Describe your mood and get your perfect playlist instantly!', 'info');
     }, 1000);
+
+    // Initialize Media Session API
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.setActionHandler('play', () => {
+        if (state.audioPlayer && !state.isPlaying) {
+          state.audioPlayer.play();
+          state.isPlaying = true;
+          updateNowPlayingPlayBtn(true);
+          const currentCard = $$('.track-card')[state.currentTrackIndex];
+          if (currentCard) {
+            currentCard.classList.add('playing');
+            updatePlayButtonIcon(currentCard, true);
+            startWaveformOnCard(currentCard);
+          }
+        }
+      });
+      navigator.mediaSession.setActionHandler('pause', () => {
+        if (state.audioPlayer && state.isPlaying) {
+          state.audioPlayer.pause();
+          state.isPlaying = false;
+          updateNowPlayingPlayBtn(false);
+          const currentCard = $$('.track-card')[state.currentTrackIndex];
+          if (currentCard) {
+            currentCard.classList.remove('playing');
+            updatePlayButtonIcon(currentCard, false);
+            stopWaveformOnCard(currentCard);
+          }
+        }
+      });
+      navigator.mediaSession.setActionHandler('previoustrack', playPrevTrack);
+      navigator.mediaSession.setActionHandler('nexttrack', playNextTrack);
+    }
   }
 
   // ══════════════════════════════════════════
@@ -165,13 +200,42 @@
       if (e.target === dom.playlistModal) closePlaylistModal();
     });
 
-    // Now playing controls
-    dom.npClose.addEventListener('click', stopPlayback);
+    // Now Playing controls
+    dom.npClose.addEventListener('click', () => stopPlayback(true));
     dom.npVolume.addEventListener('input', (e) => {
       if (state.audioPlayer) {
         state.audioPlayer.volume = e.target.value / 100;
       }
     });
+
+    if (dom.npBtnPrev) dom.npBtnPrev.addEventListener('click', playPrevTrack);
+    if (dom.npBtnNext) dom.npBtnNext.addEventListener('click', playNextTrack);
+    if (dom.npBtnPlay) dom.npBtnPlay.addEventListener('click', () => {
+      if (!state.currentTrack) return;
+      if (state.isPlaying) {
+        state.audioPlayer.pause();
+        state.isPlaying = false;
+        const currentCard = $$('.track-card')[state.currentTrackIndex];
+        if (currentCard) {
+          currentCard.classList.remove('playing');
+          updatePlayButtonIcon(currentCard, false);
+          stopWaveformOnCard(currentCard);
+        }
+        updateNowPlayingPlayBtn(false);
+      } else {
+        state.audioPlayer.play();
+        state.isPlaying = true;
+        const currentCard = $$('.track-card')[state.currentTrackIndex];
+        if (currentCard) {
+          currentCard.classList.add('playing');
+          updatePlayButtonIcon(currentCard, true);
+          startWaveformOnCard(currentCard);
+        }
+        updateNowPlayingPlayBtn(true);
+      }
+    });
+
+    // Seek bar
     dom.npProgressWrap.addEventListener('click', (e) => {
       if (!state.audioPlayer) return;
       const rect = dom.npProgressWrap.getBoundingClientRect();
@@ -501,6 +565,24 @@
 
     // Show now-playing bar
     updateNowPlayingBar(track);
+    updateNowPlayingPlayBtn(true);
+
+    // Setup Media Session API for background/lock-screen controls
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: track.title,
+        artist: track.artist,
+        album: "MoodTunes Playlist 🎵",
+        artwork: [
+          { src: track.artwork || '', sizes: '512x512', type: 'image/jpeg' }
+        ]
+      });
+
+      navigator.mediaSession.setActionHandler('play', () => dom.npBtnPlay.click());
+      navigator.mediaSession.setActionHandler('pause', () => dom.npBtnPlay.click());
+      navigator.mediaSession.setActionHandler('previoustrack', playPrevTrack);
+      navigator.mediaSession.setActionHandler('nexttrack', playNextTrack);
+    }
 
     // Play
     state.audioPlayer.play().catch(() => {
@@ -512,16 +594,44 @@
     clearInterval(state.progressInterval);
     state.progressInterval = setInterval(updateProgress, 250);
 
-    // On end
+    // On end - Auto play next track
     state.audioPlayer.addEventListener('ended', () => {
-      stopPlayback(true);
+      playNextTrack();
     });
 
     // Error
     state.audioPlayer.addEventListener('error', () => {
       showToast('Preview unavailable for this track 😕', 'error');
-      stopPlayback(true);
+      playNextTrack(); // Skip to next automatically
     });
+  }
+
+  function playNextTrack() {
+    const cards = Array.from(document.querySelectorAll('.track-card'));
+    const nextIndex = state.currentTrackIndex + 1;
+    
+    if (nextIndex < cards.length) {
+      const nextBtn = cards[nextIndex].querySelector('.btn-play');
+      if (nextBtn) nextBtn.click();
+    } else {
+      stopPlayback(true);
+    }
+  }
+
+  function playPrevTrack() {
+    const cards = Array.from(document.querySelectorAll('.track-card'));
+    const prevIndex = state.currentTrackIndex - 1;
+    
+    // If we're more than 3 seconds into the song, restart current
+    if (state.audioPlayer && state.audioPlayer.currentTime > 3) {
+      state.audioPlayer.currentTime = 0;
+      return;
+    }
+
+    if (prevIndex >= 0) {
+      const prevBtn = cards[prevIndex].querySelector('.btn-play');
+      if (prevBtn) prevBtn.click();
+    }
   }
 
   function updatePlayButtonIcon(card, isPlaying) {
@@ -581,6 +691,15 @@
     requestAnimationFrame(() => {
       dom.nowPlaying.classList.add('visible');
     });
+  }
+
+  function updateNowPlayingPlayBtn(isPlaying) {
+    if (dom.npBtnPlay) {
+      dom.npBtnPlay.innerHTML = isPlaying 
+        ? '<i data-lucide="pause"></i>' 
+        : '<i data-lucide="play"></i>';
+      if (window.lucide) lucide.createIcons();
+    }
   }
 
   function updateProgress() {

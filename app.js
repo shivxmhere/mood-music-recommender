@@ -585,7 +585,9 @@
     }
 
     // Play
-    state.audioPlayer.play().catch(() => {
+    state.audioPlayer.play().then(() => {
+      _consecutiveErrors = 0; // Reset error counter on successful play
+    }).catch(() => {
       showToast('Could not play preview 😕', 'error');
     });
     state.isPlaying = true;
@@ -606,15 +608,40 @@
     });
   }
 
+  let _consecutiveErrors = 0;
+  let _lastSkipTime = 0;
+
   function playNextTrack() {
+    const now = Date.now();
     const cards = Array.from(document.querySelectorAll('.track-card'));
     const nextIndex = state.currentTrackIndex + 1;
-    
+
+    // Guard: if we're skipping too fast (< 500ms apart), it's an error cascade
+    if (now - _lastSkipTime < 500) {
+      _consecutiveErrors++;
+    } else {
+      _consecutiveErrors = 0; // Reset if normal playback ended
+    }
+    _lastSkipTime = now;
+
+    // If 3+ rapid errors in a row, stop — don't cascade
+    if (_consecutiveErrors >= 3) {
+      console.warn('Stopped auto-skip: too many consecutive playback errors.');
+      showToast('Some tracks could not play. Try a different mood! 🎵', 'info');
+      _consecutiveErrors = 0;
+      stopPlayback(true);
+      return;
+    }
+
     if (nextIndex < cards.length) {
-      const nextBtn = cards[nextIndex].querySelector('.btn-play');
-      if (nextBtn) nextBtn.click();
+      // Small delay to avoid instant cascade
+      setTimeout(() => {
+        const nextBtn = cards[nextIndex].querySelector('.btn-play');
+        if (nextBtn) nextBtn.click();
+      }, 300);
     } else {
       stopPlayback(true);
+      showToast('Playlist finished! 🎶', 'info');
     }
   }
 

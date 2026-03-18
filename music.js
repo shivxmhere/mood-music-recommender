@@ -24,7 +24,8 @@ const MusicAPI = (() => {
       itunesUrl: item.trackViewUrl || '#',
       releaseYear: item.releaseDate
         ? item.releaseDate.split('-')[0]
-        : ''
+        : '',
+      source: 'itunes'
     };
   }
 
@@ -36,72 +37,21 @@ const MusicAPI = (() => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
 
-  // ── Fetch tracks from iTunes (Fallback: 30s) ──
-  async function fetchTracks(searchTerm, limit = 12) {
+  // ── Fetch tracks from iTunes ──
+  async function fetchTracks(searchTerm, limit = 15) {
     const url = `${BASE_URL}?term=${encodeURIComponent(searchTerm)}&media=music&entity=song&limit=${limit}&country=IN&explicit=No`;
 
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`iTunes Search failed: ${response.status}`);
+      throw new Error(`iTunes API error: ${response.status}`);
     }
+
     const data = await response.json();
-    return data.results.map(track => ({
-      id: track.trackId,
-      title: track.trackName,
-      artist: track.artistName,
-      genre: track.primaryGenreName,
-      artwork: track.artworkUrl100,
-      duration: track.trackTimeMillis,
-      preview: track.previewUrl,
-      itunesUrl: track.trackViewUrl,
-      source: 'itunes'
-    }));
+    // Only return tracks that have a valid preview URL
+    return (data.results || [])
+      .map(parseTrack)
+      .filter(t => t.preview && t.title !== 'Unknown Title');
   }
-
-  // ── Fetch tracks from JioSaavn (Primary: Full Free Songs) ──
-  async function fetchSaavnTracks(searchTerm, limit = 10) {
-    // 1. Search for songs
-    const searchUrl = `https://jiosaavn-api.vercel.app/search?query=${encodeURIComponent(searchTerm)}`;
-    const searchResponse = await fetch(searchUrl);
-    if (!searchResponse.ok) {
-      throw new Error(`Saavn Search failed: ${searchResponse.status}`);
-    }
-    const searchJson = await searchResponse.json();
-    const rawResults = searchJson.results || [];
-    
-    // We only need top results for performance
-    const topTracks = rawResults.slice(0, limit);
-    
-    // 2. We need to fetch stream URL for each in parallel (since search doesn't include it in this specific API)
-    const tracksWithMedia = await Promise.all(topTracks.map(async (raw) => {
-      try {
-        const detailUrl = `https://jiosaavn-api.vercel.app/song?id=${raw.id}`;
-        const detailRes = await fetch(detailUrl);
-        if (!detailRes.ok) return null;
-        const detailJson = await detailRes.json();
-        
-        // Grab the direct high-quality media link
-        const mediaUrl = detailJson.media_url;
-        if (!mediaUrl) return null;
-
-        return {
-          id: raw.id,
-          title: raw.title,
-          artist: raw.artist || 'Bollywood Artist',
-          genre: raw.language ? raw.language.charAt(0).toUpperCase() + raw.language.slice(1) : 'Bollywood',
-          artwork: raw.image ? raw.image.replace('150x150', '500x500') : '',
-          duration: detailJson.duration ? detailJson.duration * 1000 : 180000,
-          preview: mediaUrl,
-          itunesUrl: detailJson.perma_url || '#',
-          source: 'saavn'
-        };
-      } catch (err) {
-        return null;
-      }
-    }));
-
-    return tracksWithMedia.filter(t => t !== null);
-  }  
 
   // ── Get a complete playlist by trying multiple search terms ──
   async function getPlaylist(musicParams, language, targetCount = 10) {
@@ -128,53 +78,33 @@ const MusicAPI = (() => {
       [terms[i], terms[j]] = [terms[j], terms[i]];
     }
 
-    // Attempt to use Saavn API for FULL length songs first
-    let fetchFn = fetchSaavnTracks;
-    let usingFallback = false;
-
-    // We'll iterate terms, keeping only those we haven't seen.
+    // Fetch from iTunes for each search term
     for (const term of terms) {
       if (allTracks.length >= targetCount) break;
+
       try {
-        const tracks = await fetchFn(term, 8);
+        const tracks = await fetchTracks(term, 15);
+
         for (const track of tracks) {
           if (allTracks.length >= targetCount) break;
-          // De-duplicate by title + artist to be safe across APIs
-          const uniqueKey = track.title + track.artist;
-          if (seenIds.has(uniqueKey)) continue;
-          seenIds.add(uniqueKey);
+          if (seenIds.has(track.id)) continue;
+          seenIds.add(track.id);
           allTracks.push(track);
         }
-      } catch (e) {
-        console.warn(`Saavn error for "${term}":`, e.message);
-        // If Saavn fails (blocked/down), gracefully switch to iTunes API permanently for this request
-        usingFallback = true;
-        fetchFn = fetchTracks;
-        try {
-          // Retry immediately with iTunes
-          const fallbackTracks = await fetchFn(term, 8);
-          for (const track of fallbackTracks) {
-            if (allTracks.length >= targetCount) break;
-            const uniqueKey = track.title + track.artist;
-            if (seenIds.has(uniqueKey)) continue;
-            seenIds.add(uniqueKey);
-            allTracks.push(track);
-          }
-        } catch (err) {
-          console.warn(`iTunes fallback also failed for "${term}":`, err.message);
-        }
+      } catch (err) {
+        console.warn(`Failed to fetch for "${term}":`, err.message);
+        continue;
       }
     }
 
-    // If still short, generic fallback fetch
+    // If we still don't have enough, try a generic search
     if (allTracks.length < targetCount) {
       try {
-        const fallback = await fetchFn('popular hits 2024', 15);
+        const fallback = await fetchTracks('popular music hits', 15);
         for (const track of fallback) {
           if (allTracks.length >= targetCount) break;
-          const uniqueKey = track.title + track.artist;
-          if (seenIds.has(uniqueKey)) continue;
-          seenIds.add(uniqueKey);
+          if (seenIds.has(track.id)) continue;
+          seenIds.add(track.id);
           allTracks.push(track);
         }
       } catch (e) {
@@ -184,7 +114,7 @@ const MusicAPI = (() => {
 
     let unique = allTracks;
     
-    // If "both": sort so Hindi and English alternate
+    // If "both": shuffle so Hindi and English tracks are mixed
     if (language === "both") {
       unique = interleaveHindiEnglish(unique);
     }
@@ -193,8 +123,6 @@ const MusicAPI = (() => {
   }
 
   function interleaveHindiEnglish(tracks) {
-    // Simple interleave — every other track from different search origins
-    // Since iTunes doesn't tag language, just shuffle the combined results
     return tracks.sort(() => Math.random() - 0.5);
   }
 

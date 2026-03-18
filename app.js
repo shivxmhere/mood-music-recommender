@@ -22,7 +22,8 @@
     playbackProgress: 0,
     progressInterval: null,
     currentWaveform: null,
-    currentMusicParams: null
+    currentMusicParams: null,
+    language: 'both' // english, hindi, or both
   };
 
   // ── DOM REFERENCES ──
@@ -35,6 +36,7 @@
     btnAnalyse: $('#btnAnalyse'),
     quickMoods: $('#quickMoods'),
     floatingNotes: $('#floatingNotes'),
+    langPills: $$('.lang-pill'),
     // Banner
     moodBanner: $('#moodBanner'),
     bannerEmoji: $('#bannerEmoji'),
@@ -141,6 +143,15 @@
       handleQuickMood(mood);
     });
 
+    // Language Toggle
+    dom.langPills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        dom.langPills.forEach(p => p.classList.remove('selected'));
+        pill.classList.add('selected');
+        state.language = pill.dataset.lang;
+      });
+    });
+
     // Save playlist
     dom.btnSavePlaylist.addEventListener('click', savePlaylist);
 
@@ -211,7 +222,7 @@
       applyMoodTheme(emotion.primary);
 
       // 8. Fetch playlist from iTunes
-      const tracks = await MusicAPI.getPlaylist(musicParams, 10);
+      const tracks = await MusicAPI.getPlaylist(musicParams, state.language, 10);
 
       if (tracks.length === 0) {
         showToast('Could not find tracks. Try describing your mood differently! 🎵', 'error');
@@ -366,6 +377,12 @@
     const isFav = state.favourites.includes(track.id);
     const duration = MusicAPI.formatDuration(track.duration);
 
+    const lang = detectLanguage(track.artist);
+    const isHindi = lang === 'hindi';
+    const badgeText = isHindi ? '🇮🇳 Bollywood' : '🌍 English';
+    const badgeColor = isHindi ? '#f97316' : '#3b82f6';
+
+    // Added a quick style inject here to handle badges without modifying style.css
     card.innerHTML = `
       <div class="track-num">
         <span>${index + 1}</span>
@@ -384,8 +401,9 @@
       <div class="track-info">
         <span class="track-title">${escapeHtml(track.title)}</span>
         <span class="track-artist">${escapeHtml(track.artist)}</span>
-        <div class="track-meta">
-          <span class="genre-tag">${track.genre}</span>
+        <div class="track-meta" style="display:flex; gap:6px; align-items:center; margin-top:4px;">
+          <span style="font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(255,255,255,0.1);color:${badgeColor}">${badgeText}</span>
+          <span class="genre-tag" style="font-size:0.65rem;font-weight:600;padding:2px 8px;border-radius:20px;background:rgba(255,255,255,0.1);color:#fff">${track.genre}</span>
           <span class="track-duration">${duration}</span>
         </div>
       </div>
@@ -420,6 +438,13 @@
     Visualiser.createWaveform(card.querySelector('.track-waveform'), moodColor);
 
     return card;
+  }
+
+  function detectLanguage(artistName) {
+    const lower = artistName.toLowerCase();
+    const hindiArtists = ["arijit","atif","jubin","badshah","divine","raftaar","honey singh","diljit","ap dhillon","shreya","lata","kumar sanu","udit","sonu","shankar","ar rahman","pritam","vishal","shekhar","neha","sunidhi","alka","asha"];
+    const isHindi = hindiArtists.some(a => lower.includes(a));
+    return isHindi ? "hindi" : "english";
   }
 
   // ══════════════════════════════════════════
@@ -731,17 +756,43 @@
   // ══════════════════════════════════════════
   function handleQuickMood(mood) {
     const sampleTexts = {
-      happy: "I'm feeling amazing and super happy today, everything is going great and I just want to celebrate!",
-      sad: "Feeling really sad and down today, missing someone and feeling lonely and heartbroken",
-      stressed: "Super stressed about my exams, need something to calm me down and help me relax",
-      sleepy: "Feeling really tired and sleepy, need gentle relaxing calm music to unwind",
-      energetic: "Feeling super pumped and energetic, ready to crush my workout and push hard!",
-      romantic: "Feeling romantic and loving, thinking about someone special and my heart is full",
-      focused: "Need to focus and concentrate, have a lot of work and study to finish today",
-      angry: "Feeling really frustrated and angry about everything, need to let off some steam"
+      happy: [
+        "I'm feeling amazing and super happy today, everything is going great and I just want to celebrate!",
+        "Aaj bahut acha feel ho raha hai, bilkul mast mood hai!"
+      ],
+      sad: [
+        "Feeling really sad and down today, missing someone and feeling lonely and heartbroken",
+        "Bahut udaas hun aaj, dil nahi lag raha kuch karne mein"
+      ],
+      stressed: [
+        "Super stressed about my exams, need something to calm me down and help me relax",
+        "Exams ke liye bahut tension ho rahi hai, kuch calm chahiye"
+      ],
+      sleepy: [
+        "Feeling really tired and sleepy, need gentle relaxing calm music to unwind",
+        "Bahut neend aa rahi hai aaj, kuch relaxing aur peaceful music sunna hai"
+      ],
+      energetic: [
+        "Feeling super pumped and energetic, ready to crush my workout and push hard!",
+        "Aaj gym mein full josh hai, kuch energetic chahiye!"
+      ],
+      romantic: [
+        "Feeling romantic and loving, thinking about someone special and my heart is full",
+        "Aaj dil mein pyaar waali feeling hai, kuch romantic sunna hai"
+      ],
+      focused: [
+        "Need to focus and concentrate, have a lot of work and study to finish today",
+        "Bahut kaam bacha hai, bina distraction ke study karni hai"
+      ],
+      angry: [
+        "Feeling really frustrated and angry about everything, need to let off some steam",
+        "Bohot gussa aa raha hai, kuch heavy vibe sunni hai"
+      ]
     };
 
-    dom.moodInput.value = sampleTexts[mood] || sampleTexts.happy;
+    const options = sampleTexts[mood] || sampleTexts.happy;
+    const isHindi = Math.random() > 0.5;
+    dom.moodInput.value = isHindi ? options[1] : options[0];
     dom.charCount.textContent = `${dom.moodInput.value.length}/300 characters`;
 
     // Highlight chip

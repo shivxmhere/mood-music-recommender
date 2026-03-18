@@ -38,7 +38,7 @@ const MusicAPI = (() => {
 
   // ── Fetch tracks from iTunes ──
   async function fetchTracks(searchTerm, limit = 12) {
-    const url = `${BASE_URL}?term=${encodeURIComponent(searchTerm)}&media=music&entity=song&limit=${limit}&explicit=No`;
+    const url = `${BASE_URL}?term=${encodeURIComponent(searchTerm)}&media=music&entity=song&limit=${limit}&country=IN&explicit=No`;
 
     const response = await fetch(url);
     if (!response.ok) {
@@ -50,10 +50,23 @@ const MusicAPI = (() => {
   }
 
   // ── Get a complete playlist by trying multiple search terms ──
-  async function getPlaylist(musicParams, targetCount = 10) {
+  async function getPlaylist(musicParams, language, targetCount = 10) {
     const allTracks = [];
     const seenIds = new Set();
-    const terms = [...musicParams.searchTerms];
+    
+    let searchTermsToUse = [];
+    if (language === "english") {
+      searchTermsToUse = [...musicParams.searchTerms];
+    } else if (language === "hindi") {
+      searchTermsToUse = [...musicParams.hindiSearchTerms];
+    } else {
+      // "both" — mix English and Hindi
+      const englishPick = musicParams.searchTerms.slice(0, 2);
+      const hindiPick = musicParams.hindiSearchTerms.slice(0, 3);
+      searchTermsToUse = [...englishPick, ...hindiPick];
+    }
+
+    const terms = searchTermsToUse;
 
     // Shuffle search terms for variety
     for (let i = terms.length - 1; i > 0; i--) {
@@ -96,7 +109,20 @@ const MusicAPI = (() => {
       }
     }
 
-    return allTracks.slice(0, targetCount);
+    let unique = allTracks;
+    
+    // If "both": sort so Hindi and English alternate
+    if (language === "both") {
+      unique = interleaveHindiEnglish(unique);
+    }
+    
+    return unique.slice(0, targetCount);
+  }
+
+  function interleaveHindiEnglish(tracks) {
+    // Simple interleave — every other track from different search origins
+    // Since iTunes doesn't tag language, just shuffle the combined results
+    return tracks.sort(() => Math.random() - 0.5);
   }
 
   // ── PUBLIC API ──

@@ -128,35 +128,131 @@ const SentimentEngine = (() => {
   const EMOTION_MUSIC_MAP = {
     happy: {
       valence: 0.85, energy: 0.8, tempo: 128, acoustic: 0.1,
-      searchTerms: ['pop upbeat happy', 'feel good hits', 'happy pop songs', 'dance pop party']
+      searchTerms: [
+        "pop upbeat happy",
+        "feel good music 2024",
+        "happy english hits"
+      ],
+      hindiSearchTerms: [
+        "bollywood happy songs",
+        "bollywood party hits",
+        "arijit singh happy",
+        "badshah party songs",
+        "bollywood dance hits 2024",
+        "pharrell happy hindi"
+      ]
     },
     sad: {
       valence: 0.2, energy: 0.3, tempo: 70, acoustic: 0.7,
-      searchTerms: ['sad songs', 'heartbreak ballad', 'emotional piano', 'sad indie acoustic']
+      searchTerms: [
+        "sad songs heartbreak",
+        "emotional piano music",
+        "sad indie songs"
+      ],
+      hindiSearchTerms: [
+        "arijit singh sad songs",
+        "bollywood sad songs",
+        "tum hi ho aashiqui",
+        "hindi emotional songs",
+        "jubin nautiyal sad",
+        "atif aslam heartbreak"
+      ]
     },
     angry: {
       valence: 0.4, energy: 0.95, tempo: 150, acoustic: 0.05,
-      searchTerms: ['rock intense', 'metal power', 'aggressive hip hop', 'hard rock anthems']
+      searchTerms: [
+        "rock intense energy",
+        "metal workout",
+        "aggressive beats"
+      ],
+      hindiSearchTerms: [
+        "bollywood item songs",
+        "hindi rap songs",
+        "divine rap india",
+        "raftaar rap hindi",
+        "yo yo honey singh",
+        "ap dhillon intense"
+      ]
     },
     calm: {
       valence: 0.6, energy: 0.25, tempo: 70, acoustic: 0.8,
-      searchTerms: ['ambient chill', 'meditation music', 'lo-fi study beats', 'calm acoustic relaxing']
+      searchTerms: [
+        "ambient chill music",
+        "meditation music",
+        "lo-fi study beats"
+      ],
+      hindiSearchTerms: [
+        "bollywood soft songs",
+        "hindi meditation music",
+        "lata mangeshkar peaceful",
+        "indian classical calm",
+        "hindi flute music",
+        "shankar mahadevan soft"
+      ]
     },
     energetic: {
       valence: 0.75, energy: 0.95, tempo: 145, acoustic: 0.05,
-      searchTerms: ['workout music', 'gym beats power', 'high energy pop', 'electronic dance']
+      searchTerms: [
+        "workout music gym",
+        "high energy pop",
+        "running motivation music"
+      ],
+      hindiSearchTerms: [
+        "bollywood gym songs",
+        "hindi workout music",
+        "badshah energy songs",
+        "bollywood dance 2024",
+        "punjabi bhangra hits",
+        "diljit dosanjh energy"
+      ]
     },
     romantic: {
       valence: 0.7, energy: 0.4, tempo: 90, acoustic: 0.6,
-      searchTerms: ['romantic songs love', 'love ballads', 'slow dance romantic', 'romantic R&B']
+      searchTerms: [
+        "romantic love songs",
+        "love ballads english",
+        "slow dance music"
+      ],
+      hindiSearchTerms: [
+        "arijit singh romantic",
+        "bollywood love songs",
+        "hindi romantic 2024",
+        "atif aslam romantic",
+        "jubin nautiyal love",
+        "tum se hi jab we met"
+      ]
     },
     focused: {
       valence: 0.55, energy: 0.5, tempo: 100, acoustic: 0.4,
-      searchTerms: ['focus music instrumental', 'study beats', 'concentration music', 'lo-fi hip hop study']
+      searchTerms: [
+        "focus music study",
+        "concentration instrumental",
+        "study beats lo-fi"
+      ],
+      hindiSearchTerms: [
+        "hindi instrumental study",
+        "bollywood instrumental",
+        "indian classical study",
+        "ar rahman instrumental",
+        "hindi lo-fi study",
+        "peaceful hindi music"
+      ]
     },
     melancholy: {
       valence: 0.3, energy: 0.35, tempo: 80, acoustic: 0.65,
-      searchTerms: ['melancholy indie', 'bittersweet songs', 'nostalgic music', 'alternative indie sad']
+      searchTerms: [
+        "melancholy indie songs",
+        "bittersweet music",
+        "nostalgic songs"
+      ],
+      hindiSearchTerms: [
+        "hindi nostalgic songs",
+        "bollywood 90s sad",
+        "purane hindi gaane",
+        "kumar sanu nostalgic",
+        "hindi memories songs",
+        "retro bollywood hits"
+      ]
     }
   };
 

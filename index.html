@@ -16,6 +16,35 @@
 
   <link rel="stylesheet" href="style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎵</text></svg>">
+  <style>
+    .lang-toggle {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .lang-pill {
+      padding: 6px 16px;
+      background: transparent;
+      border: 1px solid #333;
+      border-radius: 50px;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      font-family: var(--font-heading);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .lang-pill:hover {
+      border-color: #555;
+      color: #fff;
+    }
+    .lang-pill.selected {
+      background: #1DB954;
+      color: #000;
+      border-color: #1DB954;
+      font-weight: 700;
+    }
+  </style>
 </head>
 <body>
   <!-- ====== NAVBAR ====== -->
@@ -53,21 +82,27 @@
           id="moodInput"
           class="mood-input"
           maxlength="300"
-          placeholder="Tell me how you're feeling...&#10;Try: 'I'm stressed before my exams and need something to calm me down' or 'feeling super energetic and happy today!'"
+          placeholder="Tell me how you're feeling...&#10;Try: 'stressed about exams, need to calm down'&#10;or 'aaj bahut acha feel ho raha hai!'&#10;or 'feeling pumped for gym today 💪'"
           rows="4"
         ></textarea>
         <span class="char-count" id="charCount">0/300 characters</span>
       </div>
 
       <div class="quick-moods" id="quickMoods">
-        <button class="mood-chip" data-mood="happy">😊 Happy</button>
-        <button class="mood-chip" data-mood="sad">😢 Sad</button>
-        <button class="mood-chip" data-mood="stressed">😤 Stressed</button>
-        <button class="mood-chip" data-mood="sleepy">😴 Sleepy</button>
-        <button class="mood-chip" data-mood="energetic">💪 Energetic</button>
-        <button class="mood-chip" data-mood="romantic">😍 Romantic</button>
-        <button class="mood-chip" data-mood="focused">🎯 Focused</button>
-        <button class="mood-chip" data-mood="angry">😤 Angry</button>
+        <button class="mood-chip" data-mood="happy">😊 Happy / Khush</button>
+        <button class="mood-chip" data-mood="sad">😢 Sad / Udaas</button>
+        <button class="mood-chip" data-mood="stressed">😤 Stressed / Pareshan</button>
+        <button class="mood-chip" data-mood="sleepy">😴 Sleepy / Neend</button>
+        <button class="mood-chip" data-mood="energetic">💪 Energetic / Josh</button>
+        <button class="mood-chip" data-mood="romantic">😍 Romantic / Pyaar</button>
+        <button class="mood-chip" data-mood="focused">🎯 Focused / Dhyan</button>
+        <button class="mood-chip" data-mood="angry">😤 Angry / Gussa</button>
+      </div>
+
+      <div class="lang-toggle" id="langToggle">
+        <button class="lang-pill" data-lang="english">🌍 English</button>
+        <button class="lang-pill" data-lang="hindi">🇮🇳 Hindi</button>
+        <button class="lang-pill selected" data-lang="both">✨ Both</button>
       </div>
 
       <button class="btn-analyse" id="btnAnalyse">

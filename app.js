@@ -597,15 +597,15 @@
     state.progressInterval = setInterval(updateProgress, 250);
 
     // On end - Auto play next track
-    state.audioPlayer.addEventListener('ended', () => {
+    state.audioPlayer.onended = () => {
       playNextTrack();
-    });
+    };
 
     // Error
-    state.audioPlayer.addEventListener('error', () => {
+    state.audioPlayer.onerror = () => {
       showToast('Preview unavailable for this track 😕', 'error');
       playNextTrack(); // Skip to next automatically
-    });
+    };
   }
 
   let _consecutiveErrors = 0;
@@ -681,8 +681,11 @@
 
   function stopPlayback(hideBar = true) {
     if (state.audioPlayer) {
+      state.audioPlayer.onended = null;
+      state.audioPlayer.onerror = null;
       state.audioPlayer.pause();
-      state.audioPlayer.src = '';
+      state.audioPlayer.removeAttribute('src'); // Clean memory
+      state.audioPlayer.load();
       state.audioPlayer = null;
     }
     state.isPlaying = false;

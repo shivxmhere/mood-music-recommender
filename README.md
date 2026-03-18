@@ -1,4 +1,4 @@
-# 🎵 Mood-Based Music Recommender
+# 🎵 MoodTunes
 
 > Day 6/35 — #35DaysOfProjects by **Shivam Singh** | IIT Patna
 
@@ -13,7 +13,7 @@ Describe your mood in plain English. Get a perfect playlist instantly.
 - 🗣️ Natural language mood input
 - 🧠 Custom sentiment analysis engine (500+ word lexicon)
 - 🎯 8 emotion categories with music parameter mapping
-- 🎵 Real iTunes API integration (30-sec previews)
+- 🎵 Real JioSaavn API integration (Full 320kbps High Quality Songs)
 - 🎧 Inline audio playback with waveform visualiser
 - 🎡 Emotion wheel visualisation (SVG-based)
 - 📊 Mood history tracking with localStorage

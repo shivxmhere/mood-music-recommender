@@ -60,41 +60,47 @@ const MusicAPI = (() => {
 
   // ── Fetch tracks from JioSaavn (Primary: Full Free Songs) ──
   async function fetchSaavnTracks(searchTerm, limit = 10) {
-    // We use the most reputable open source JioSaavn API
-    const url = `https://saavn.dev/api/search/songs?query=${encodeURIComponent(searchTerm)}&limit=${limit}`;
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Saavn Search failed: ${response.status}`);
+    // 1. Search for songs
+    const searchUrl = `https://jiosaavn-api.vercel.app/search?query=${encodeURIComponent(searchTerm)}`;
+    const searchResponse = await fetch(searchUrl);
+    if (!searchResponse.ok) {
+      throw new Error(`Saavn Search failed: ${searchResponse.status}`);
     }
-    const json = await response.json();
-    const results = json?.data?.results || [];
-
-    return results.map(track => {
-      // Find highest quality download URL
-      const streamUrl = track.downloadUrl && track.downloadUrl.length > 0
-        ? track.downloadUrl[track.downloadUrl.length - 1].url
-        : track.url;
+    const searchJson = await searchResponse.json();
+    const rawResults = searchJson.results || [];
+    
+    // We only need top results for performance
+    const topTracks = rawResults.slice(0, limit);
+    
+    // 2. We need to fetch stream URL for each in parallel (since search doesn't include it in this specific API)
+    const tracksWithMedia = await Promise.all(topTracks.map(async (raw) => {
+      try {
+        const detailUrl = `https://jiosaavn-api.vercel.app/song?id=${raw.id}`;
+        const detailRes = await fetch(detailUrl);
+        if (!detailRes.ok) return null;
+        const detailJson = await detailRes.json();
         
-      const artwork = track.image && track.image.length > 0
-        ? track.image[track.image.length - 1].url
-        : '';
-        
-      // Ensure we have a valid streamable media link
-      if (!streamUrl) return null;
+        // Grab the direct high-quality media link
+        const mediaUrl = detailJson.media_url;
+        if (!mediaUrl) return null;
 
-      return {
-        id: track.id,
-        title: track.name,
-        // Saavn returns arrays or string for primaryArtists. Handle both:
-        artist: typeof track.primaryArtists === 'string' ? track.primaryArtists : (track.primaryArtists?.[0]?.name || 'Unknown Artist'),
-        genre: track.language ? track.language.charAt(0).toUpperCase() + track.language.slice(1) : 'Bollywood',
-        artwork: artwork,
-        duration: track.duration ? track.duration * 1000 : 180000,
-        preview: streamUrl,
-        itunesUrl: track.url || '#',
-        source: 'saavn'
-      };
-    }).filter(t => t !== null);
+        return {
+          id: raw.id,
+          title: raw.title,
+          artist: raw.artist || 'Bollywood Artist',
+          genre: raw.language ? raw.language.charAt(0).toUpperCase() + raw.language.slice(1) : 'Bollywood',
+          artwork: raw.image ? raw.image.replace('150x150', '500x500') : '',
+          duration: detailJson.duration ? detailJson.duration * 1000 : 180000,
+          preview: mediaUrl,
+          itunesUrl: detailJson.perma_url || '#',
+          source: 'saavn'
+        };
+      } catch (err) {
+        return null;
+      }
+    }));
+
+    return tracksWithMedia.filter(t => t !== null);
   }  
 
   // ── Get a complete playlist by trying multiple search terms ──

@@ -1695,4 +1695,11 @@ img {
     flex-wrap: wrap;
     gap: 10px;
   }
+  .progress-rings {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .banner-content {
+    padding: 12px;
+  }
 }
